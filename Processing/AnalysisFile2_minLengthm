@@ -1,0 +1,170 @@
+clc;
+clear all;
+load RESULT;
+
+mean=1;std=2; SDNN=3; SDSD=4;
+TD=1;VR=2;
+ECG=1; SKT=2; EDA=3;
+% Index=1; ValleyTime=2; PeakTime=3; Amplitude=4; RiseTime=5; Slope=6;EDRType=7;
+title={'People','2D','VR'};
+load lenVideo.mat;
+
+
+for video=1:12
+     ECG1=[]; ECG2=[]; ECG3=[]; ECG4=[];
+     SKT1=[]; SKT2=[];
+     for people=1:30
+        %% ECG & SKT
+        if ~isempty(RESULT{1,people}{1,TD}{1,3}{1,video});
+             index=people*ones(lenVideo(video),1);
+             
+             ECG1TD=RESULT{people}{TD}{3}{video}{ECG}(1:lenVideo(video),mean:mean);
+             ECG1VR=RESULT{people}{VR}{3}{video}{ECG}(1:lenVideo(video),mean:mean);
+             tempECG1=cat(2,index,ECG1TD,ECG1VR);
+             ECG1=cat(1,ECG1,tempECG1);
+
+             ECG2TD=RESULT{people}{TD}{3}{video}{ECG}(1:lenVideo(video),std:std);
+             ECG2VR=RESULT{people}{VR}{3}{video}{ECG}(1:lenVideo(video),std:std);             
+             tempECG2=cat(2,index,ECG2TD,ECG2VR);
+             ECG2=cat(1,ECG2,tempECG2);
+
+             ECG3TD=RESULT{people}{TD}{3}{video}{ECG}(1:lenVideo(video),SDNN:SDNN);
+             ECG3VR=RESULT{people}{VR}{3}{video}{ECG}(1:lenVideo(video),SDNN:SDNN);             
+             tempECG3=cat(2,index,ECG3TD,ECG3VR);
+             ECG3=cat(1,ECG3,tempECG3);
+
+             ECG4TD=RESULT{people}{TD}{3}{video}{ECG}(1:lenVideo(video),SDSD:SDSD);
+             ECG4VR=RESULT{people}{VR}{3}{video}{ECG}(1:lenVideo(video),SDSD:SDSD);             
+             tempECG4=cat(2,index,ECG4TD,ECG4VR);
+             ECG4=cat(1,ECG4,tempECG4);
+
+             SKT1TD=RESULT{people}{TD}{3}{video}{SKT}(1:lenVideo(video),mean:mean);
+             SKT1VR=RESULT{people}{VR}{3}{video}{SKT}(1:lenVideo(video),mean:mean);             
+             tempSKT1=cat(2,index,SKT1TD,SKT1VR);
+             SKT1=cat(1,SKT1,tempSKT1);
+
+             SKT2TD=RESULT{people}{TD}{3}{video}{SKT}(1:lenVideo(video),std:std);
+             SKT2VR=RESULT{people}{VR}{3}{video}{SKT}(1:lenVideo(video),std:std);             
+             tempSKT2=cat(2,index,SKT2TD,SKT2VR);
+             SKT2=cat(1,SKT2,tempSKT2);
+         end
+     end
+     fprintf('video%02d\n',video-1);
+     %% Save File
+     Name=num2str(video-1,'%02d');
+     Path='F:\Graduation Project\A Study Record\Week 16\Result2\';
+     FileName=[Path,'Video',Name,'MeanRate.mat'];
+     save(string(FileName),'ECG1');
+     
+     Path2='F:\Graduation Project\A Study Record\Week 16\Result2\';
+     FileName2=[Path2,'Video',Name,'StdRate.mat'];
+     save(string(FileName2),'ECG2');
+
+     Path3='F:\Graduation Project\A Study Record\Week 16\Result2\';
+     FileName3=[Path3,'Video',Name,'SDNN.mat'];
+     save(string(FileName3),'ECG3');
+     
+     Path4='F:\Graduation Project\A Study Record\Week 16\Result2\';
+     FileName4=[Path4,'Video',Name,'SDSD.mat'];
+     save(string(FileName4),'ECG4'); 
+     
+     Path5='F:\Graduation Project\A Study Record\Week 16\Result2\';
+     FileName5=[Path5,'Video',Name,'MeanSKT.mat'];
+     save(string(FileName5),'SKT1'); 
+     
+     Path6='F:\Graduation Project\A Study Record\Week 16\Result2\';
+     FileName6=[Path6,'Video',Name,'StdSKT.mat'];
+     save(string(FileName6),'SKT2');      
+end
+
+
+Rranova=table(); %create empty table
+path='F:\Graduation Project\A Study Record\Week 16\Result2\';
+
+    %% 0.SKT-Mean
+    for video=1:12;
+        Name=num2str(video-1,'%02d');
+        FileName=[path,'Video',Name,'MeanSKT.mat'];
+        disp(FileName);
+        load(FileName);
+        people=num2str(SKT1(:,1));   %Important!
+        t=table(people,SKT1(:,2),SKT1(:,3),'VariableNames',{'People','TD','VR'});
+        Cond=dataset([1,2]','VarNames',{'Condition'});
+        rm = fitrm(t,'TD-VR~People','WithinDesign',Cond);
+        re = ranova(rm);
+        disp(re);
+        Rranova(video,:)=re(1,:);
+    end;
+
+    %% 1.SKT-Std
+    for video=1:12;
+        Name=num2str(video-1,'%02d');
+        FileName=[path,'Video',Name,'StdSKT.mat'];
+        disp(FileName);
+        load(FileName);
+        people=num2str(SKT2(:,1));   %Important!
+        t=table(people,SKT2(:,2),SKT2(:,3),'VariableNames',{'People','TD','VR'});
+        Cond=dataset([1,2]','VarNames',{'Condition'});
+        rm = fitrm(t,'TD-VR~People','WithinDesign',Cond);
+        re = ranova(rm);
+        Rranova(13+video,:)=re(1,:);
+    end;
+
+    %% 2.ECG-Mean
+    for video=1:12;
+        Name=num2str(video-1,'%02d');
+        FileName=[path,'Video',Name,'MeanRate.mat'];
+        disp(FileName);
+        load(FileName);
+        people=num2str(ECG1(:,1));   %Important!
+        t=table(people,ECG1(:,2),ECG1(:,3),'VariableNames',{'People','TD','VR'});
+        Cond=dataset([1,2]','VarNames',{'Condition'});
+        rm = fitrm(t,'TD-VR~People','WithinDesign',Cond);
+        re = ranova(rm);
+        Rranova(26+video,:)=re(1,:);
+    end;
+
+    %% 3.ECG-Std
+    for video=1:12;
+        Name=num2str(video-1,'%02d');
+        FileName=[path,'Video',Name,'StdRate.mat'];
+        disp(FileName);
+        load(FileName);
+        people=num2str(ECG2(:,1));   %Important!
+        t=table(people,ECG2(:,2),ECG2(:,3),'VariableNames',{'People','TD','VR'});
+        Cond=dataset([1,2]','VarNames',{'Condition'});
+        rm = fitrm(t,'TD-VR~People','WithinDesign',Cond);
+        re = ranova(rm);
+        Rranova(39+video,:)=re(1,:);
+    end;
+
+    %% 4.SDNN
+    for video=1:12;
+        Name=num2str(video-1,'%02d');
+        FileName=[path,'Video',Name,'SDNN.mat'];
+        disp(FileName);
+        load(FileName);
+        people=num2str(ECG3(:,1));   %Important!
+        t=table(people,ECG3(:,2),ECG3(:,3),'VariableNames',{'People','TD','VR'});
+        Cond=dataset([1,2]','VarNames',{'Condition'});
+        rm = fitrm(t,'TD-VR~People','WithinDesign',Cond);
+        re = ranova(rm);
+        Rranova(52+video,:)=re(1,:);
+    end;
+
+    %% 5.SDSD
+    for video=1:12;
+        Name=num2str(video-1,'%02d');
+        FileName=[path,'Video',Name,'SDSD.mat'];
+        disp(FileName);
+        load(FileName);
+        people=num2str(ECG4(:,1));   %Important!
+        t=table(people,ECG4(:,2),ECG4(:,3),'VariableNames',{'People','TD','VR'});
+        Cond=dataset([1,2]','VarNames',{'Condition'});
+        rm = fitrm(t,'TD-VR~People','WithinDesign',Cond);
+        re = ranova(rm);
+        Rranova(65+video,:)=re(1,:);
+    end;
+    disp(Rranova);
+
+            
